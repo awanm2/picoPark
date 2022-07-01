@@ -48,10 +48,7 @@ int main(void)
        //display.clear();
     }
 */
-      //char* str = "   SUNDUS I LOVE YOU, YUSUF NAUGHTY BIG BOY";
-//      char* str = "   CUSTOMER-INSPIRED, INVENTION, EXCELLENCE, AGILITY, PARTNERSHIP, OPENNESS, WE ARE SOLIDIGM  ";
       //char* str = "   SOLIDIGM THE NEW PARADIGM OF SOLID-STATE STORAGE";
-//     char* str = "   JOHN LETS HIKE DECALIBRON 14ER LOOP SOON";
      char* str = "SOMETIMES YOUR JOY IS THE SOURCE OF YOUR SMILE, BUT SOMETIMES YOUR SIMLE CAN BE THE SOURCE OF YOUR JOY";
       while(runForever){
 
