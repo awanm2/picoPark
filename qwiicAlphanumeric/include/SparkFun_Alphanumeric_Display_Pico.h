@@ -40,7 +40,7 @@ Distributed as-is; no warranty is given.
 
 #define DEFAULT_NOTHING_ATTACHED 0xFF
 #define MAX_NUMBER_OF_DISPLAYS      4
-#define UINT32_WORD_PER_DISPLAY     4 // Max number of 32 bits word per display
+#define DIGIT_PER_DISPLAY     4 // Max number of 32 bits word per display
 
 // Define constants for segment bits
 #define SEG_A 0x0001
@@ -113,7 +113,6 @@ private:
     uint8_t _deviceAddressDisplayThree;
     uint8_t _deviceAddressDisplayFour;
     uint8_t digitPosition = 0;
-    uint8_t numberOfDisplays = 1;
     bool displayOnOff = 0; // Tracks display on/off bit of display setup register
     bool decimalOnOff = 0;
     bool colonOnOff = 0;
@@ -126,6 +125,9 @@ private:
 
     // Linked List of character definitions
     struct CharDef * pCharDefList = NULL;
+
+protected:
+    uint8_t numberOfDisplays = 1;
 
 public:
     // Device status
@@ -142,16 +144,27 @@ public:
     bool reserved_addr(uint8_t addr);
     bool isConnected(uint8_t displayNumber);
 
-    uint8_t getDisplayI2Address(uint8_t displayNumber);
-
-
     bool initialize();
     uint8_t lookUpDisplayAddress(uint8_t displayNumber);
 
     //Display configuration functions
     bool clear();
+
+/** @brief Sets the brightness of all displays on the bus
+ *
+ *  @param duty Duty cycle valid between 0 (off) and 15 (full brightness) The length of the string s.
+ *  @return true if operation is com.
+ */
     bool setBrightness(uint8_t duty);
+
+/** @brief Sets the brightness for single display on the bus
+ *
+ *  @param displayNumber Display selected for current operation  
+ *  @param duty Duty cycle valid between 0 (off) and 15 (full brightness) The length of the string s.
+ *  @return true if operation is com.
+ */
     bool setBrightnessSingle(uint8_t displayNumber, uint8_t duty);
+
     bool setBlinkRate(float rate);
     bool setBlinkRateSingle(uint8_t displayNumber, float rate);
     bool displayOn();
@@ -159,18 +172,40 @@ public:
     bool displayOnSingle(uint8_t displayNumber);
     bool displayOffSingle(uint8_t displayNumber);
     bool setDisplayOnOff(uint8_t displayNumber, bool turnOnDisplay);
-    bool setBrightnessSingle(uint8_t displayNumber);
-
-
+    
     bool enableSystemClock();
     bool disableSystemClock();
     bool enableSystemClockSingle(uint8_t displayNumber);
     bool disableSystemClockSingle(uint8_t displayNumber);
 
     // Light up functions
+
+ /** @brief Illuminate the segement on a given digit
+ *
+ *  @param segment Segment for current function
+ *  @param digit  Digit for current function.
+ *  @return None.
+ */   
     void illuminateSegment(char segment, uint8_t digit);
+ 
+ /** @brief Clear the segement on a given digit
+ *
+ *  @param segment Segment for current function
+ *  @param digit  Digit for current function.
+ *  @return None.
+ */   
+    void clearSegment(char segment, uint8_t digit);
+
+ /** @brief Illuminate a character on a given digit
+ *
+ *  @param segment Segment for current function
+ *  @param digit  Digit for current function.
+ *  @return None.
+ */ 
     void illuminateChar(uint16_t disp, uint8_t digit);
+    
     void printChar(uint8_t displayChar, uint8_t digit);
+    
     bool updateDisplay();
 
     // Define Character Segment Map
@@ -195,11 +230,6 @@ public:
     bool shiftRight(uint8_t shiftAmt = 1);
     bool shiftLeft(uint8_t shiftAmt = 1);
 
-    // For overloading the print function
-    //virtual size_t write(uint8_t);
-    //virtual size_t write(const uint8_t *buffer, size_t size);
-    //virtual size_t write(const char *str);
-
     // I2C abstraction
     
     // Write Display Data Ram.
@@ -212,12 +242,6 @@ public:
     size_t write(const char *str);
     size_t write(uint8_t b);
     size_t writeLongBuffer(uint8_t *buffer, size_t size);
-
-    
-    // Animation Functions
-    void Animate_1(void);
-    void Animate_2(void);
-    void Animate_3(void);
 
 };
 

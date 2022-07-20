@@ -1,13 +1,12 @@
 /******************************************************************************
 SparkFun_Alphanumeric_Display.cpp
 SparkFun Alphanumeric Display Library Source File
-Priyanka Makin @ SparkFun Electronics
-Original Creation Date: February 25, 2020
-https://github.com/sparkfun/SparkFun_Alphanumeric_Display_Arduino_Library
 
-Updated May 2, 2020 by Gaston Williams to add defineChar function
 
-Pickup a board here: https://sparkle.sparkfun.com/sparkle/storefront_products/16391
+Orignal Code is by Priyanka Makin @ SparkFun Electronics for Arduino. 
+See README.md for details.
+
+Current File is for Raspberry Pi Pico.
 
 This file implements all functions of the HT16K33 class. Functions here range
 from printing to one or more Alphanumeric Displays, changing the display settings, and writing/
@@ -19,16 +18,21 @@ the ADR1/ADR0 pins the address has been seen to change. The best way around this
 to do a isConnected check before updateRAM() is sent to the driver IC.
 
 Development environment specifics:
-	IDE: Arduino 1.8.9
-	Hardware Platform: Arduino Uno
+	Hardware Platform: Raspberry Pi Pico
 	Alphanumeric Display Breakout Version: 1.0.0
 
-This code is beerware; if you see me (or any other SparkFun employee) at the
-local, and you've found our code helpful, please buy us a round!
 
 Distributed as-is; no warranty is given.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ******************************************************************************/
 
+/* -- Includes -- */
 #include "SparkFun_Alphanumeric_Display_Pico.h"
 #include <stdio.h>
 #include "pico/stdlib.h"
@@ -37,8 +41,9 @@ Distributed as-is; no warranty is given.
 #include <cstring>
 
 
-#define ALPHA_DEBUG_ON_SERIAL 0
-
+/** @brief In case an error is detected blink the LED on the board.
+ *  @return void input character
+ */
 void blinky(void) {
     #ifndef PICO_DEFAULT_LED_PIN
     #warning blink example requires a board with a regular LED
@@ -505,26 +510,6 @@ bool HT16K33::setBrightnessSingle(uint8_t displayNumber, uint8_t duty)
 }
 
 
-// Set the brightness of a single display
-// This is more a way to see if the device is still alive.
-bool HT16K33::setBrightnessSingle(uint8_t displayNumber)
-{
-
-    uint8_t triesBeforeGiveup = 5;
-	for (uint8_t x = 0; x < triesBeforeGiveup; x++)
-	{
-	
-		if(setBrightnessSingle(displayNumber, this->displayBrightNess[displayNumber]))
-		{
-			return true;
-		}
-		sleep_ms(100);
-	}
-	blinky();
-	return false;
-}
-
-
 // Set the blink rate of all displays on the bus
 // Parameter "rate" in Hz
 // Valid options for "rate" are defined by datasheet: 2.0, 1.0, or 0.5 Hz
@@ -826,6 +811,44 @@ void HT16K33::illuminateSegment(char segment, uint8_t digit)
 
 }
 
+// Clears a segment and a digit, 
+// clear the matching bit within the RAM of the Holtek RAM set
+void HT16K33::clearSegment(char segment, uint8_t digit)
+{
+	uint8_t com;
+	uint8_t row;
+
+	com = (uint8_t)((char)(segment) - 'A'); // Convert the segment letter back to a number
+
+	if (com > 6)
+		com -= 7;
+	if (segment == 'I')
+		com = 0;
+	if (segment == 'H')
+		com = 1;
+
+	row = digit % 4; // Convert digit (1 to 16) back to a relative position on a given digit on display
+	if (segment > 'G')
+		row += 4;
+
+	uint8_t offset = ((uint8_t)(digit / 4)) * 16;
+	uint8_t adr = com * 2 + offset;
+
+	// Determine the address
+	if (row > 7)
+		adr++;
+
+	// Determine the data bit
+	if (row > 7)
+		row -= 8;
+    
+	uint8_t content = this->displayRAM[adr];
+
+	content = content & (~(uint8_t)(0x1<<row));
+	this->displayRAM[adr] = content;
+
+}
+
 // Given a binary set of segments and a digit, store this data into the RAM array
 void HT16K33::illuminateChar(uint16_t segmentsToTurnOn, uint8_t digit)
 {
@@ -868,29 +891,8 @@ void HT16K33::printChar(uint8_t displayChar, uint8_t digit)
 // Get the character map from the definition list or default table
 uint16_t HT16K33::getSegmentsToTurnOn(uint8_t charPos)
 {
-  uint16_t segments = 0;
-  /*
-  // pointer to a defined character in list
-  struct CharDef * pDefChar = pCharDefList;
-
-  // Search the chacters list for a match
-  while(pDefChar && (pDefChar->position != charPos))
-  {
-    pDefChar = pDefChar -> next;
-  }
-
-  // If we found a match return that value
-  if (pDefChar != NULL)
-  {
-    segments = pDefChar -> segments;
-  }
-  // Otherwise get the value from the table
-  else
-  */
-  {
-    segments = alphanumeric_segs[charPos];
-  }
-  return segments;
+    uint16_t segments = alphanumeric_segs[charPos];
+    return segments;
 }
 
 /*
@@ -989,126 +991,5 @@ size_t HT16K33::write(const char *str)
 	return write((const uint8_t *)str, strlen(str));
 }
 
-/**************************/
-// Turn off all segments of all displays connected to bus
-void HT16K33::Animate_1(void)
-{
-	this->clear();
-    
-	if (setBrightness(6) == false)
-	{
-		return;
-	}
-
-/*
-	uint8_t val=0;
-	while (val<=0xFF){
-	   for (uint8_t i = 0; i < 16 * this->numberOfDisplays; i++)
-		   {
-			this->displayRAM[i] = val;
-		   }
-        val++;
-	    this->digitPosition = 0;
-	    (updateDisplay());
-        sleep_ms(250);
-
-	}
-	*/
-	//this->displayRAM[0] = 0x11;
-    //updateDisplay();
-    //sleep_ms(250);
-	
-	//this->clear();
-    //sleep_ms(250);
-
-	//printChar('A',1);
-	// Turn on All the segments 1 by 1
-	uint32_t i = 0;
-	uint32_t j = 0;
-	for(i=0;i<16;i++){
-	    for(j=0;j<16;j++)
-		{
-            this->displayRAM[i] |= (0x1<<j);
-			this->isConnected(1);
-	        updateDisplay(); // Send RAM buffer over I2C bus
-	        sleep_ms(100);
-		}    
-	}
-
-    this->clear();
-//    sleep_ms(250);
-
-}
-void HT16K33::Animate_2(void)
-{
-	this->clear();
-    
-	if (setBrightness(8) == false)
-	{
-		blinky();
-		return;
-	}
-	
-	
-    int com = 0;
-	int row = 0;
-	int offset = 0;
-	uint8_t content;
-	for(;row<8;row++)
-	{
-	   for(com=0;com<8;com++)
-	   {
-	       offset = (row>=0 && row<=7 ) ? 0 : 1;	
-		   content = this->displayRAM[ (com*2)+offset ];
-           content |= ((uint8_t)(0x1<<row));
-		   this->displayRAM[ (com*2)+offset ] = content;
-	       //this->isConnected(1);
-	       updateDisplay(); // Send RAM buffer over I2C bus
-	       sleep_ms(400);
-	   }
-       sleep_ms(500);
-	}
-
-     this->isConnected(1);
-	       updateDisplay(); // Send RAM buffer over I2C bus
-    
-
-  
-
-	
-}
-void HT16K33::Animate_3(void)
-{
-	
-    static volatile bool runForver = true;
-	uint32_t i = 0;
-	char segment = 'A';
-	uint8_t digit = 0;
-	while(runForver)
-	{
-		this->illuminateSegment(segment, digit);
-
-        segment+=1;
-		if(segment == 'H')
-		{
-			segment = 'A';
-			digit++;
-			if(digit == 4)
-			{
-				digit = 0;
-				this->clear();
-				sleep_ms(1000);
-			}
-		}
-		this->setBrightnessSingle(1);
-	    updateDisplay(); // Send RAM buffer over I2C bus
-        sleep_ms(500);
-		i++;
-        printf("i : %d   \n ", i);
-
-	}
 
 
-
-
-}

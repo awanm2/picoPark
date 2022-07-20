@@ -10,3 +10,8 @@ work with [Raspberry Pi Pico](https://www.raspberrypi.com/products/raspberry-pi-
 # License
 **Code, firmware, and software is released under the MIT License(http://opensource.org/licenses/MIT).**
 **See the License file in the current repository**
+# Building 
+From main directroy 
+`cmake -B build -S ./`
+then 
+`make -C build/examples`
