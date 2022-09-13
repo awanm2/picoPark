@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"C_Cpp.dimInactiveRegions": false,
+		"cmake.configureOnOpen": false
+	}
+}
